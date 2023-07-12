@@ -51,7 +51,9 @@ func (hc *HelmChart) GetWorkloadsWithDefaultValues() (map[string][]workloadinter
 
 // GetWorkloads renders chart template using the provided values and returns a map of source (absolute) file path to its workloads
 func (hc *HelmChart) GetWorkloads(values map[string]interface{}) (map[string][]workloadinterface.IMetadata, []error) {
-	vals, err := helmchartutil.ToRenderValues(hc.chart, values, helmchartutil.ReleaseOptions{}, nil)
+	vals, err := helmchartutil.ToRenderValues(hc.chart, values, helmchartutil.ReleaseOptions{
+		Name: hc.chart.Metadata.Name,
+	}, nil)
 	if err != nil {
 		return nil, []error{err}
 	}
