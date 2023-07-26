@@ -2,12 +2,15 @@ package getter
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/kubescape/opa-utils/reporthandling"
 )
 
 // GetDefaultPath returns a location under the local dot files for kubescape.
@@ -41,6 +44,21 @@ func SaveInFile(object interface{}, targetFile string) error {
 		}
 	}
 	return nil
+}
+
+func LoadControlFromFile(targetFile string) (*reporthandling.Control, error) {
+	var control reporthandling.Control
+	if _, err := os.Stat(targetFile); os.IsNotExist(err) {
+		return nil, errors.New("File not exist " + targetFile)
+	}
+
+	content, err := os.ReadFile(targetFile)
+	if err != nil {
+		return nil, errors.New("Fail to load " + targetFile)
+	}
+
+	json.Unmarshal(content, &control)
+	return &control, nil
 }
 
 // HttpDelete provides a low-level capability to send a HTTP DELETE request and serialize the response as a string.

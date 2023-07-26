@@ -3,6 +3,7 @@ package policyhandler
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/armosec/armoapi-go/armotypes"
@@ -107,7 +108,7 @@ func (policyHandler *PolicyHandler) getScanPolicies(ctx context.Context, policyI
 			return cachedPolicies, nil
 		}
 
-		logger.L().Debug("Cached policies are not the same as the requested policies")
+		logger.L().Info("Cached policies are not the same as the requested policies")
 		policyHandler.cachedPolicyIdentifiers.Invalidate()
 		policyHandler.cachedFrameworks.Invalidate()
 	}
@@ -148,22 +149,30 @@ func (policyHandler *PolicyHandler) downloadScanPolicies(ctx context.Context, po
 		var receivedControl *reporthandling.Control
 		var err error
 		for _, policy := range policyIdentifier {
-			logger.L().Debug("Downloading control", helpers.String("control", policy.Identifier))
-			receivedControl, err = policyHandler.getters.PolicyGetter.GetControl(policy.Identifier)
+			cache := getter.GetDefaultPath(policy.Identifier + ".json")
+			if _, err = os.Stat(cache); err == nil {
+				logger.L().Info("Control already exist, load from " + cache)
+				receivedControl, err = getter.LoadControlFromFile(cache)
+			} else {
+				logger.L().Info("Downloading control", helpers.String("control", policy.Identifier))
+				receivedControl, err = policyHandler.getters.PolicyGetter.GetControl(policy.Identifier)
+			}
+
 			if err != nil {
 				return frameworks, policyDownloadError(err)
 			}
+
 			if receivedControl != nil {
 				f.Controls = append(f.Controls, *receivedControl)
 
-				cache := getter.GetDefaultPath(policy.Identifier + ".json")
-				if err := getter.SaveInFile(receivedControl, cache); err != nil {
+				if err = getter.SaveInFile(receivedControl, cache); err != nil {
 					logger.L().Ctx(ctx).Warning("failed to cache file", helpers.String("file", cache), helpers.Error(err))
 				}
+			} else {
+				logger.L().Error("Fail to load control " + cache)
 			}
 		}
 		frameworks = append(frameworks, f)
-		// TODO: add case for control from file
 	default:
 		return frameworks, fmt.Errorf("unknown policy kind")
 	}

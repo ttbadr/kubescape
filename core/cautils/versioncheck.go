@@ -31,7 +31,7 @@ type IVersionCheckHandler interface {
 
 func NewIVersionCheckHandler(ctx context.Context) IVersionCheckHandler {
 	if BuildNumber == "" {
-		logger.L().Ctx(ctx).Warning("unknown build number, this might affect your scan results. Please make sure you are updated to latest version")
+		logger.L().Ctx(ctx).Warning("This version is customized by toby.tan, for cms internal used only")
 	}
 
 	if v, ok := os.LookupEnv(CLIENT_ENV); ok && v != "" {
