@@ -187,7 +187,8 @@ func testsCases(results *cautils.OPASessionObj, controls reportsummary.IControls
 				if ResourceSourcePath, ok := results.ResourceSource[rId]; ok {
 					sourcePath = ResourceSourcePath.RelativePath
 				}
-				resources[resourceToString(resource, sourcePath)] = nil
+				cResults := buildResourceControlResultTable(results.ResourcesResult[rId].AssociatedControls, &results.Report.SummaryDetails)
+				resources[resourceToString(resource, sourcePath, cID, cResults)] = nil
 			}
 			resourcesStr := shared.MapStringToSlice(resources)
 			sort.Strings(resourcesStr)
@@ -207,7 +208,7 @@ func testsCases(results *cautils.OPASessionObj, controls reportsummary.IControls
 	return testCases
 }
 
-func resourceToString(resource workloadinterface.IMetadata, sourcePath string) string {
+func resourceToString(resource workloadinterface.IMetadata, sourcePath string, cId string, results []ResourceControlResult) string {
 	sep := "; "
 	s := ""
 	s += fmt.Sprintf("apiVersion: %s", resource.GetApiVersion()) + sep
@@ -219,6 +220,16 @@ func resourceToString(resource workloadinterface.IMetadata, sourcePath string) s
 	if sourcePath != "" {
 		s += sep + fmt.Sprintf("sourcePath: %s", sourcePath)
 	}
+	r := "\n"
+	for _, k := range results {
+		if k.ID != cId {
+			continue
+		}
+		for _, v := range k.FailedPaths {
+			r += fmt.Sprintf("    %s\n", v)
+		}
+	}
+	s += r
 	return s
 }
 
